@@ -3,4 +3,4 @@ project(TextBook)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(TextBook main.cpp)
+add_executable(TextBook main.cpp Practice.h)

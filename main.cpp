@@ -1,11 +1,16 @@
 #include <iostream>
 #include "Textbook.h"
-
+Status visit(TElemType e){
+    printf("%c\n",e);
+    return true;
+}
 int main() {
     CSTree c3=MakeTree('A',0);
     CSTree c4=MakeTree('4',0);
     CSTree c2=MakeTree('2',0);
-    CSTree c1=MakeTree('1',2,c2,c4);
+    CSTree c1=MakeTree('1',3,c2,c3,c4);
+    int d=ForestDepth(c1);
+    CSTNode *A=Search(c1,'5');
 //    char *data="ABD##E##CF##G##";
 //    int i=0;
 //    BiTree T=CreateBiTree(data,i);

@@ -580,55 +580,32 @@ Status InsertChild(CSTree &T,int i,CSTree c){
     return OK;
 }
 
-
-
-
-
-
-
-
-//以下为课后习题
-
-//11.寻找顺序储存结构的完全二叉树中编号i和j最近的共同祖先节点
-int GetSharedAncestor(SqBiTree T,int i,int j){
-    if(i<1 || j<1 || i==j || i>T.lastIndex || j>T.lastIndex) return FALSE;
-    while (i>1 && j>1){
-        i=i/2;
-        j=j/2;
-        if(i==j)
-            return i;
-    }
+//树的先序遍历
+Status PreOrderTraverseForest(CSForest F,Status(*visit)(TElemType)){
+    if(F==NULL) return OK;
+    if(false==visit(F->data)) return ERROR;
+    if(false==PreOrderTraverseForest(F->firstChild,visit))  return ERROR;
+    return PreOrderTraverseForest(F->nextSibling,visit);
 }
 
-//12.求二叉链表存储的完全二叉树的最后一层的最后一个节点
-BiTNode* GetLastBiNode(BiTree T){
-    if(T!=NULL){
-        BiTree p;
-        SqlQueue q;
-        initSqlQueue(q);
-        enQueue(q,T);
-        printf("%c",T->data);
-        while (true==deQueue(q,p)){
-            if(p->lChild!=NULL) {
-                printf("%c",p->lChild->data);
-                enQueue(q, p->lChild);
-            }
-            if(p->rChild!=NULL) {
-                printf("%c",p->rChild->data);
-                enQueue(q, p->rChild);
-            }
-        }
-        return p;
-    }
-}
-//助研 树
-//P122-1
-int BiTreeDepth1(BiTree T){
-    int depthLeft,depthRight;
-    if(T==NULL)return 0;
+//求树的深度
+int ForestDepth(CSForest F) {
+    int dep,dep1,dep2;
+    if(F==NULL) dep=0;
     else{
-        depthLeft= BiTreeDepth1(T->lChild);
-        depthRight= BiTreeDepth1(T->rChild);
-        return (depthLeft>depthRight?depthLeft:depthRight)+1;
+        dep1= ForestDepth(F->firstChild);
+        dep2= ForestDepth(F->nextSibling);
+        dep=dep1+1>dep2?dep1+1:dep2;
     }
+    return dep;
+}
+
+//求树的深度
+CSTNode *Search(CSForest F,TElemType e) {
+    CSTNode *result;
+    if(F==NULL) return NULL;
+    if(F->data==e)  return F;
+    if((result=Search(F->firstChild,e))!=NULL)
+        return result;
+    return Search(F->nextSibling,e);
 }
