@@ -609,3 +609,74 @@ CSTNode *Search(CSForest F,TElemType e) {
         return result;
     return Search(F->nextSibling,e);
 }
+
+//并查集
+
+//并查集用树的双亲表示法来表示
+typedef struct {
+    int *parent;    // 双亲数组，数组下标表示元素，数组储存的对应元素代
+                    // 表元素所属树的双亲节点位置，为-1时表示根节点
+    int n;          // 节点总数
+}PForest,MFSet;
+
+//并查集初始化
+Status InitMFSet(MFSet &S,int n){
+    int i;
+    S.parent=(int*)malloc(n*sizeof(int));
+    if(S.parent==NULL)  return OVERFLOW;
+    for(i=0;i<n;i++)    S.parent[i]=-1;
+    S.n=n;
+    return OK;
+}
+
+//查找操作
+int FindMSet(MFSet S,int i){
+    if(i>=S.n || i<0)   return -1;
+    while (S.parent[i]>0)   i=S.parent[i];
+    return i;
+}
+
+//并查集的子集合并
+Status UnionMFSet(MFSet &S,int i,int j){
+    int ri,rj;
+    if(i>=S.n || i<0 || j>=S.n || j<0)  return FALSE;
+    ri= FindMSet(S,i);
+    rj= FindMSet(S,j);
+    if(ri==rj)  return FALSE;
+    S.parent[ri]=rj;
+    return TRUE;
+}
+
+//采用加权合并规则的合并
+Status UnionMFSet_WUR(MFSet &S,int i,int j){
+    int ri,rj;
+    if(i>=S.n || i<0 || j>=S.n || j<0)  return FALSE;
+    ri= FindMSet(S,i); rj= FindMSet(S,j);
+    if(ri==rj)  return FALSE;
+    if(S.parent[ri]>S.parent[rj]){
+        S.parent[rj]+=S.parent[ri];
+        S.parent[ri]=rj;
+    }else{
+        S.parent[ri]+=S.parent[rj];
+        S.parent[rj]=ri;
+    }
+    return TRUE;
+}
+
+//路径压缩法
+int FindMFSet_PC(MFSet &S,int i){
+    if(i>=S.n || i<0)  return -1;
+    if(S.parent[i]<0)  return i;    //找到根节点
+    S.parent[i]=FindMFSet_PC(S,i);
+    return S.parent[i];
+}
+
+//亲戚判定
+Status hasRelationShip(MFSet &S,int a,int b){
+    if(a>=S.n || a<0 || b>=S.n || b<0)
+        return FALSE;
+    if(FindMFSet_PC(S,a) == FindMFSet_PC(S,b)){
+        return TRUE;
+    }else
+        return FALSE;
+}

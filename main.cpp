@@ -5,12 +5,16 @@ Status visit(TElemType e){
     return true;
 }
 int main() {
-    CSTree c3=MakeTree('A',0);
-    CSTree c4=MakeTree('4',0);
-    CSTree c2=MakeTree('2',0);
-    CSTree c1=MakeTree('1',3,c2,c3,c4);
-    int d=ForestDepth(c1);
-    CSTNode *A=Search(c1,'5');
+    MFSet S={};
+    InitMFSet(S,9);
+    S.parent[0]=-1;S.parent[1]=-1;S.parent[2]=1;S.parent[3]=-1;S.parent[4]=1;S.parent[5]=3;S.parent[6]=0;S.parent[7]=4;S.parent[8]=3;
+    UnionMFSet(S,4,5);
+//    CSTree c3=MakeTree('A',0);
+//    CSTree c4=MakeTree('4',0);
+//    CSTree c2=MakeTree('2',0);
+//    CSTree c1=MakeTree('1',3,c2,c3,c4);
+//    int d=ForestDepth(c1);
+//    CSTNode *A=Search(c1,'5');
 //    char *data="ABD##E##CF##G##";
 //    int i=0;
 //    BiTree T=CreateBiTree(data,i);
