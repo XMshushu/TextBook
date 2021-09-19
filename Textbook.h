@@ -5,6 +5,7 @@
 #define TRUE true;
 #define OK true;
 #define OVERFLOW false;
+#define MAXINT 9999;
 typedef char TElemType;
 typedef bool Status;
 typedef int KeyType;
@@ -679,4 +680,175 @@ Status hasRelationShip(MFSet &S,int a,int b){
         return TRUE;
     }else
         return FALSE;
+}
+
+
+//图
+#define UNVISITED 0
+#define VISITED 1
+#define INFINITY MAXINT
+typedef  enum{DG,DN,UDG,UDN} GraphKind; //图的四种类型：有向图，有向带权图，无向图，无向带权图
+#define VexType int
+typedef struct{
+    VexType *vexs;      //顶点数组
+    int **arc;          //邻接矩阵
+    int n,e;            //n顶点数，e边数
+    GraphKind kind;     //图的类型
+    int *tag;           //标志数组，标记顶点访问与否
+}MGraph;
+
+//边/弧的信息
+typedef struct{
+    VexType v,w;    //边、弧的顶点
+    int info;       //带权图的权值
+}ArcInfo;
+
+//查找顶点
+int LocateVex_M(MGraph G,VexType v){
+    int i;
+    for (i=0;i<G.n;i++)
+        if(v==G.vexs[i])    return i;
+    return -1;
+}
+
+Status CreateUDG_M(MGraph &G,VexType *ves,int n,ArcInfo *arcs,int e);
+Status CreateUDN_M(MGraph &G,VexType *ves,int n,ArcInfo *arcs,int e);
+Status CreateDN_M(MGraph &G,VexType *ves,int n,ArcInfo *arcs,int e);
+Status CreateDG_M(MGraph &G,VexType *ves,int n,ArcInfo *arcs,int e);
+
+//创建图的邻接数组结构
+Status CreateGraph_M(MGraph &G,GraphKind kind,VexType *vexs,int n,ArcInfo *arcs,int e){
+    if(n<0 || e<0 || (n>0 && NULL==vexs) || (e>0 && NULL==arcs))
+        return ERROR;
+    G.kind=kind;
+    switch (G.kind){
+        case UDG:return CreateUDG_M(G,vexs,n,arcs,e);break;
+        case DG:return CreateDG_M(G,vexs,n,arcs,e);break;
+        case UDN:return CreateUDN_M(G,vexs,n,arcs,e);break;
+        case DN:return CreateDN_M(G,vexs,n,arcs,e);break;
+        default:return ERROR;
+    }
+}
+
+//初始化含n个顶点且无边的图G的邻接数组储存结构
+int InitGraph_M(MGraph &G,GraphKind kind,VexType *vexs,int n){
+    int i,j,info;
+    if(n<0 || (n>0 && vexs==NULL))  return ERROR;
+    if(kind==DG || kind==UDG)   info=0;
+    else if (kind==DN || kind==UDN) {
+        info=INFINITY;
+    }
+    else return ERROR;
+    G.kind=kind;
+    if (n==0)   return OK;
+    if(NULL==(G.vexs=(VexType*) malloc(n*sizeof(VexType))))  return OVERFLOW;
+    for(i=0;i<G.n;i++)  G.vexs[i]=vexs[i];
+    if(NULL==(G.arc=(int**) malloc(n*sizeof(int*))))    return OVERFLOW;
+    for(i=0;i<G.n;i++)
+        if(NULL==(G.arc[i]=(int*) malloc(n*sizeof(int))))
+            return OVERFLOW;
+    if(NULL==(G.tag=(int*) malloc(n*sizeof(int))))    return OVERFLOW;
+    for(i=0;i<G.n;i++){
+        G.tag[i]==UNVISITED;
+        for(j=0;j<G.n;j++)  G.arc[i][j]=info;
+    }
+    return OK;
+}
+
+//创建无向图的邻接数组存储结构
+Status CreateUDG_M(MGraph &G,VexType *vexs,int n,ArcInfo *arcs,int e){
+    int i,j,k;
+    VexType v,w;
+    if(InitGraph_M(G,G.kind,vexs,n)!=true) return ERROR;
+    G.e=e;
+    for(k=0;k<G.e;k++){
+        v=arcs[k].v;
+        w=arcs[k].w;
+        i= LocateVex_M(G,v);
+        j= LocateVex_M(G,w);
+        if(i<0 || j<0) return ERROR;
+        G.arc[i][j]=G.arc[j][i]=1;
+    }
+    return OK;
+}
+
+//求第一个邻接顶点
+int FirstAdjVex_M(MGraph G,int k){
+    int i;
+    if(k<0 || k>G.n) return -1;
+    for(i=0;i<G.n;i++)
+        if((G.kind==DG || G.kind==UDG) && G.arc[k][i]!=0) return i;
+        else if((G.kind==DN || G.kind==UDN) && G.arc[k][i]!=99999) return i;
+    return -1;
+}
+
+//邻接表
+typedef struct AdjVexNode{
+    int adjvex;
+    struct AdjVexNode *nextArc;
+    int info;
+}AdjVexNode,*AdjVexNodeP;   //邻接链表节点
+
+typedef struct VexNode{
+    VexType data;
+    struct AdjVexNode *firstArc;
+}VexNode;   //邻接数组元素
+
+typedef struct{
+    VexNode *vexs;
+    int n,e;
+    GraphKind kind;
+    int *tags;
+}ALGraph;   //邻接表的类型
+
+Status CreateUDG_AL(ALGraph &G,VexType *ves,int n,ArcInfo *arcs,int e);
+Status CreateUDN_AL(ALGraph &G,VexType *ves,int n,ArcInfo *arcs,int e);
+Status CreateDN_AL(ALGraph &G,VexType *ves,int n,ArcInfo *arcs,int e);
+Status CreateDG_AL(ALGraph &G,VexType *ves,int n,ArcInfo *arcs,int e);
+
+//查找顶点
+int LocateVex_AL(ALGraph G,VexType v){
+    int i;
+    for (i=0;i<G.n;i++)
+        if(v==G.vexs[i].data)    return i;
+    return -1;
+}
+//创建图的邻接表结构
+Status CreateGraph_AL(ALGraph &G,GraphKind kind,VexType *vexs,int n,ArcInfo *arcs,int e){
+    if(n<0 || e<0 || (n>0 && NULL==vexs) || (e>0 && NULL==arcs))
+        return ERROR;
+    G.kind=kind;
+    switch (G.kind){
+        case UDG:return CreateUDG_AL(G,vexs,n,arcs,e);break;
+        case DG:return CreateDG_AL(G,vexs,n,arcs,e);break;
+        case UDN:return CreateUDN_AL(G,vexs,n,arcs,e);break;
+        case DN:return CreateDN_AL(G,vexs,n,arcs,e);break;
+        default:return ERROR;
+    }
+}
+
+//创建有向图的邻接表结构
+Status CreateDG_AL(ALGraph &G,VexType *vexs,int n,ArcInfo *arcs,int e){
+    int i,j,k;
+    VexType v,w;
+    AdjVexNodeP p;
+    G.n=n;G.e=e;
+    G.vexs=(VexNode*) malloc(n*sizeof(VexNode));
+    G.tags=(int*) malloc(n*sizeof(int));
+    for(i=0;i<G.n;i++){
+        G.tags[i]=UNVISITED;
+        G.vexs[i].data=vexs[i];
+        G.vexs[i].firstArc=NULL;
+    }
+    for(k=0;k<G.e;k++){
+        v=arcs[k].v;w=arcs[k].w;
+        i= LocateVex_AL(G,v); j= LocateVex_AL(G,w);
+        if(i<0 || j<0) return ERROR;
+        p=(AdjVexNodeP) malloc(sizeof(AdjVexNode));
+        if(p==NULL) return OVERFLOW;
+        p->adjvex=j;
+        p->nextArc=G.vexs[i].firstArc;
+        G.vexs[i].firstArc=p;
+    }
+    return OK;
 }
