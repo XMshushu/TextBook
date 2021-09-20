@@ -694,7 +694,7 @@ typedef struct{
     int **arc;          //邻接矩阵
     int n,e;            //n顶点数，e边数
     GraphKind kind;     //图的类型
-    int *tag;           //标志数组，标记顶点访问与否
+    int *tags;           //标志数组，标记顶点访问与否
 }MGraph;
 
 //边/弧的信息
@@ -747,9 +747,9 @@ int InitGraph_M(MGraph &G,GraphKind kind,VexType *vexs,int n){
     for(i=0;i<G.n;i++)
         if(NULL==(G.arc[i]=(int*) malloc(n*sizeof(int))))
             return OVERFLOW;
-    if(NULL==(G.tag=(int*) malloc(n*sizeof(int))))    return OVERFLOW;
+    if(NULL==(G.tags=(int*) malloc(n * sizeof(int))))    return OVERFLOW;
     for(i=0;i<G.n;i++){
-        G.tag[i]==UNVISITED;
+        G.tags[i] == UNVISITED;
         for(j=0;j<G.n;j++)  G.arc[i][j]=info;
     }
     return OK;
@@ -782,6 +782,15 @@ int FirstAdjVex_M(MGraph G,int k){
     return -1;
 }
 
+//求下一个邻接顶点
+int NextAdjVex_M(MGraph G,int k,int m){
+    int i;
+    if(k<0 || k>G.n || m<0 || m>G.n) return -1;
+    for(i=m;i<G.n;i++)
+        if((G.kind==DG || G.kind==UDG) && G.arc[k][i]!=0) return i;
+        else if((G.kind==DN || G.kind==UDN) && G.arc[k][i]!=99999) return i;
+        else return -1;
+}
 //邻接表
 typedef struct AdjVexNode{
     int adjvex;
@@ -813,6 +822,7 @@ int LocateVex_AL(ALGraph G,VexType v){
         if(v==G.vexs[i].data)    return i;
     return -1;
 }
+
 //创建图的邻接表结构
 Status CreateGraph_AL(ALGraph &G,GraphKind kind,VexType *vexs,int n,ArcInfo *arcs,int e){
     if(n<0 || e<0 || (n>0 && NULL==vexs) || (e>0 && NULL==arcs))
@@ -850,5 +860,101 @@ Status CreateDG_AL(ALGraph &G,VexType *vexs,int n,ArcInfo *arcs,int e){
         p->nextArc=G.vexs[i].firstArc;
         G.vexs[i].firstArc=p;
     }
+    return OK;
+}
+
+//插入弧或边
+Status AddArc_AL(ALGraph &G,int k,int m,int info){
+    AdjVexNodeP p;
+    if(k<0 || k>G.n || m<0 || m>G.n) return ERROR;
+    if((G.kind==UDG || G.kind==DG) && info!=1) return ERROR;    //图的类型和权值不匹配
+    p=G.vexs[k].firstArc;
+    while(p!=NULL){     //判断弧是否存在
+        if(m==p->adjvex)  return ERROR;
+        p=p->nextArc;
+    }
+    p=(AdjVexNodeP) malloc(sizeof(AdjVexNode));
+    if(p==NULL) return OVERFLOW;
+    p->adjvex=m;p->info=info;
+    p->nextArc=G.vexs[k].firstArc;
+    G.vexs[k].firstArc=p;
+    if(G.kind==UDN || G.kind==DN){
+        p=(AdjVexNodeP) malloc(sizeof(AdjVexNode));
+        if(p==NULL) return OVERFLOW;
+        p->adjvex=k;p->info=info;
+        p->nextArc=G.vexs[m].firstArc;
+        G.vexs[m].firstArc=p;
+    }
+    G.e++;
+    return OK;
+}
+
+//求第一个邻接顶点
+int FirstAdjVex_AL(ALGraph G,int k,AdjVexNodeP &p){
+    if(k<0 || k>G.n) return -1;
+    p=G.vexs[k].firstArc;
+    if(p!=NULL) return p->adjvex;
+    else return -1;
+}
+
+//求下一个邻接顶点
+int NextAdjVex_AL(ALGraph G,int k,AdjVexNodeP &p){
+    if(k<0 || k>G.n) return -1;
+    if(p==NULL) return -1;
+    p=p->nextArc;
+    if(p!=NULL) return p->adjvex;
+    else return -1;
+}
+
+//求K顶点的所有邻接顶点
+Status visitAllAdjVex(ALGraph G,int k,Status (*visit)(int)){
+    int i;AdjVexNodeP p=NULL;
+    if(k<0 || k>G.n) return ERROR;
+    for (i= FirstAdjVex_AL(G,k,p);i>=0;i= NextAdjVex_AL(G,k,p)) {
+        if(visit(i)== false) return ERROR;
+    }
+    return OK;
+}
+
+//广度优先遍历
+Status BSFTraverse_AL(ALGraph G,Status(*visit)(int)){
+    int i,j,k;
+    AdjVexNodeP p;
+    LQueue Q;InitQueue(Q);
+    for(i=0;i<G.n;i++) G.tags[i]=UNVISITED;
+    for(i=0;i<G.n;i++)
+        if(UNVISITED==G.tags[i]){
+            if(visit(i)== false) return ERROR;
+            G.tags[i]=VISITED;EnQueue_LQ(Q,i);
+            while(DeQueue_LQ(Q,k)==OK){
+                for(j= FirstAdjVex_AL(G,k,p);j>0;j= NextAdjVex_AL(G,k,p)){
+                    if(G.tags[j]==UNVISITED){
+                        if(visit(j)== false) return ERROR;
+                        G.tags[j]=VISITED;EnQueue_LQ(Q,j);
+                    }
+                }
+            }
+        }
+}
+
+//连通图的深度优先遍历
+Status DFS_M(MGraph G,int k,Status(*visit)(int)){
+    int i;
+    if(false==visit(k)) return ERROR;
+    G.tags[k]=VISITED;
+    for(i= FirstAdjVex_M(G,k);i>0;i=NextAdjVex_M(G,k,i)){
+        if(UNVISITED==G.tags[i])
+            if(false==DFS_M(G,i,visit)) return ERROR;
+    }
+    return OK;
+}
+
+//图的深度优先遍历
+Status DFSTraverse_M(MGraph G,Status(*visit)(int)){
+    int i;
+    for(i=0;i<G.n;i++)  G.tags[i]=UNVISITED;
+    for(i=0;i<G.n;i++)
+        if(UNVISITED==G.tags[i])
+            if(false==DFS_M(G,i,visit)) return ERROR;
     return OK;
 }
